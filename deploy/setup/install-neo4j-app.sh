@@ -37,6 +37,7 @@ fi
 
 if git_refresh OpenTreeOfLife taxomachine || [ ! -d ~/.m2/repository/org/opentree/taxomachine ]; then
     (cd repo/taxomachine; sh mvn_install.sh)
+    # (*) see below
 fi
 
 #jar=opentree-neo4j-plugins-0.0.1-SNAPSHOT.jar
@@ -57,8 +58,13 @@ function make_neo4j_instance {
         mv neo4j-community-* neo4j-$APP
     fi
 
-    # Get plugin from git repository
-    if git_refresh OpenTreeOfLife $APP || [ ! -r neo4j-$APP/plugins/$jar ]; then
+    # Get plugin from git repository.
+    # Kludgey dependency logic here requires two copies of the plugin .jar file.
+    # When the one in target/ gets deleted after the mvn_install above (*),
+    # that's a signal that we need to recompile the plugin.  See
+    # https://github.com/OpenTreeOfLife/opentree/issues/268
+    if git_refresh OpenTreeOfLife $APP || [ ! -r neo4j-$APP/plugins/$jar ] || \
+       [ ! -r repo/$APP/target/$jar ]; then
     
         echo "attempting to recompile "$APP" plugins"
         # Create and install the plugins .jar file
